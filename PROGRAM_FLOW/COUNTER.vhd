@@ -1,0 +1,62 @@
+library UTILITIES;
+
+entity COUNTER is
+	port (
+	RESET : in BIT;
+	CLK : in BIT;
+	CHIP_SELECT : in BIT;
+	PARALEL_LOAD : in BIT_VECTOR (3 downto 0);
+	Q : buffer BIT_VECTOR (3 downto 0);
+	CARRY : out BIT
+	);
+end COUNTER;
+
+architecture AR_COUNTER of COUNTER is
+
+signal NQ : BIT_VECTOR (3 downto 0); --unuse
+
+signal J3, K3, J2, K2, J1, K1, J0, K0 : BIT;
+--AUXILIARY SIGNALS TO CONNECT GATES
+signal notCS, notPL3, notPL2, notPL1, notPL0 : BIT;
+signal AND_BTW_CS_Q2_Q1_Q0, AND_BTW_CS_notQ2_Q1_Q0, AND_BTW_CS_Q1_notQ0, AND_BTW_CS_Q0 : BIT;
+signal AND_BTW_PL3_notCS, AND_BTW_PL2_notCS, AND_BTW_PL1_notCS, AND_BTW_PL0_notCS : BIT;
+signal AND_BTW_notPL3_notCS, AND_BTW_notPL2_notCS, AND_BTW_notPL1_notCS, AND_BTW_notPL0_notCS : BIT;
+
+begin
+	JK_FLIP_FLOP0 : entity UTILITIES.JK_FLIP_FLOP(AR_JK_FLIP_FLOP) port map (CLK, J0, K0, '1', RESET, Q(0), NQ(0));
+	JK_FLIP_FLOP1 : entity UTILITIES.JK_FLIP_FLOP(AR_JK_FLIP_FLOP) port map (CLK, J1, K1, '1', RESET, Q(1), NQ(1));
+	JK_FLIP_FLOP2 : entity UTILITIES.JK_FLIP_FLOP(AR_JK_FLIP_FLOP) port map (CLK, J2, K2, '1', RESET, Q(2), NQ(2));
+	JK_FLIP_FLOP3 : entity UTILITIES.JK_FLIP_FLOP(AR_JK_FLIP_FLOP) port map (CLK, J3, K3, '1', RESET, Q(3), NQ(3));
+	
+	INV1 : entity UTILITIES.INVERSOR(AR_INVERSOR) port map (CHIP_SELECT, notCS);
+	INV2 : entity UTILITIES.INVERSOR(AR_INVERSOR) port map (PARALEL_LOAD(3), notPL3);
+	INV3 : entity UTILITIES.INVERSOR(AR_INVERSOR) port map (PARALEL_LOAD(2), notPL2);
+	INV4 : entity UTILITIES.INVERSOR(AR_INVERSOR) port map (PARALEL_LOAD(1), notPL1);
+	INV5 : entity UTILITIES.INVERSOR(AR_INVERSOR) port map (PARALEL_LOAD(0), notPL0);
+	
+	AND_GATE1 : entity UTILITIES.AND4(AR_AND4) port map (CHIP_SELECT, Q(2), Q(1), Q(0), AND_BTW_CS_Q2_Q1_Q0);
+	AND_GATE2 : entity UTILITIES.AND4(AR_AND4) port map (CHIP_SELECT, NQ(2), Q(1), Q(0), AND_BTW_CS_notQ2_Q1_Q0);
+	AND_GATE3 : entity UTILITIES.AND2(AR_AND2) port map (CHIP_SELECT, Q(0), AND_BTW_CS_Q0);
+	AND_GATE4 : entity UTILITIES.AND4(AR_AND4) port map (CHIP_SELECT, Q(1), NQ(0), '1', AND_BTW_CS_Q1_notQ0);
+	
+	AND_GATE5 : entity UTILITIES.AND2(AR_AND2) port map (PARALEL_LOAD(3), notCS, AND_BTW_PL3_notCS);
+	AND_GATE6 : entity UTILITIES.AND2(AR_AND2) port map (notPL3, notCS, AND_BTW_notPL3_notCS);
+	AND_GATE7 : entity UTILITIES.AND2(AR_AND2) port map (PARALEL_LOAD(2), notCS, AND_BTW_PL2_notCS);
+	AND_GATE8 : entity UTILITIES.AND2(AR_AND2) port map (notPL2, notCS, AND_BTW_notPL2_notCS);
+	AND_GATE9 : entity UTILITIES.AND2(AR_AND2) port map (PARALEL_LOAD(1), notCS, AND_BTW_PL1_notCS);
+	AND_GATE10 : entity UTILITIES.AND2(AR_AND2) port map (notPL1, notCS, AND_BTW_notPL1_notCS);
+	AND_GATE11 : entity UTILITIES.AND2(AR_AND2) port map (PARALEL_LOAD(0), notCS, AND_BTW_PL0_notCS);
+	AND_GATE12 : entity UTILITIES.AND2(AR_AND2) port map (notPL0, notCS, AND_BTW_notPL0_notCS);
+	
+	OR_GATE1 : entity UTILITIES.OR2(AR_OR2) port map (AND_BTW_CS_Q2_Q1_Q0, AND_BTW_PL3_notCS, J3);
+	OR_GATE2 : entity UTILITIES.OR2(AR_OR2) port map (AND_BTW_CS_Q2_Q1_Q0, AND_BTW_notPL3_notCS, K3);
+	OR_GATE3 : entity UTILITIES.OR2(AR_OR2) port map (AND_BTW_CS_notQ2_Q1_Q0, AND_BTW_PL2_notCS, J2);
+	OR_GATE4 : entity UTILITIES.OR2(AR_OR2) port map (AND_BTW_CS_Q2_Q1_Q0, AND_BTW_notPL2_notCS, K2);
+	OR_GATE5 : entity UTILITIES.OR3(AR_OR3) port map (AND_BTW_CS_Q0, AND_BTW_CS_Q1_notQ0, AND_BTW_PL1_notCS, J1);
+	OR_GATE6 : entity UTILITIES.OR2(AR_OR2) port map (AND_BTW_CS_Q0, AND_BTW_notPL1_notCS, K1);
+	OR_GATE7 : entity UTILITIES.OR2(AR_OR2) port map (CHIP_SELECT, AND_BTW_PL0_notCS, J0);
+	OR_GATE8 : entity UTILITIES.OR2(AR_OR2) port map (CHIP_SELECT, AND_BTW_notPL0_notCS, K0);
+	
+	CARRY_AND : entity UTILITIES.AND4(AR_AND4) port map (Q(3), Q(2), Q(1), Q(0), CARRY);
+	
+end AR_COUNTER;
